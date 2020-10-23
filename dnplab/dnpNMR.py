@@ -377,3 +377,50 @@ def autophase(workspace, method="arctan"):
         return workspace
     else:
         return data
+
+
+def phase(workspace, method = 'arctan', p0 = 0.0):
+    """Automatically phase data
+
+    Args:
+        workspace (dnpdata_collection, dnpdata): Data object to autophase
+        method: arctan for autophase, manualP0 for manual zero order phasing
+
+    Returns:
+        dnpdata_collection, dnpdata: Autophased data
+
+    Example::
+
+        ws = dnp.dnpNMR.phase(ws) - Autophase data
+        ws = dnp.dnpNMR.phase(ws, 'manualP0', -10) - Zero order phase correction with -10 degrees
+
+    """
+
+    data, is_workspace = return_data(workspace)
+
+    if method == 'arctan':
+        proc_parameters = {"method": "arctan"}
+
+        phase = _np.arctan(_np.sum(_np.imag(data.values)) / _np.sum(_np.real(data.values)))
+
+        data.values *= _np.exp(-1j * phase)
+        if _np.sum(_np.real(data.values)) < 0:
+            data.values *= -1.0
+
+        proc_attr_name = "autophase"
+        data.add_proc_attrs(proc_attr_name, proc_parameters)
+
+    elif method == 'manualP0':
+        proc_parameters = {"method": "manualP0"}
+
+        phase = p0 * _np.pi / 180
+        data.values *= _np.exp(-1j * phase)
+
+        proc_attr_name = "phaseP0"
+        data.add_proc_attrs(proc_attr_name, proc_parameters)
+
+    if is_workspace:
+        workspace[workspace.processing_buffer] = data
+        return workspace
+    else:
+        return data
